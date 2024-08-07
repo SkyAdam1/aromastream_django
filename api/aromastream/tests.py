@@ -75,29 +75,26 @@ class UserTests(APITestCase):
         
 
 
-from rest_framework.test import APIClient, APITestCase
-from django.urls import reverse
-from django.contrib.auth import get_user_model
-from rest_framework_simplejwt.tokens import SlidingToken
-from .models import Video, TimeStamp
-from django.core.files.uploadedfile import SimpleUploadedFile
-from unittest.mock import patch
-from .models import ChangeRequest
-User = get_user_model()
 
 class TimeStampTests(APITestCase):
     def setUp(self):
         self.client = APIClient()
         self.user = User.objects.create_user(username='testuser2', password='testpassword')
+        self.user.is_staff = True
+        self.user.is_superuser = True
+        self.user.save()
         self.token = str(SlidingToken.for_user(self.user))
         self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + self.token)
         self.video = Video.objects.create(title='test video', description='test description', views=0)
         self.timestamp_data = {'video': self.video.id, 'aroma': 'A', 'moment': '12:34:56'}
 
+        self.user.is_staff = True
+
+        
     def test_create_timestamp(self):
+        self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + self.token)
         response = self.client.post(reverse('timestamp_create'), self.timestamp_data, format='json')
         self.assertEqual(response.status_code, 201)
-
         self.assertTrue(TimeStamp.objects.filter(video=self.video, aroma='A', moment='12:34:56').exists())
 
     def test_get_timestamps(self):
@@ -113,6 +110,9 @@ class VideoTests(APITestCase):
     def setUp(self):
         self.client = APIClient()
         self.user = User.objects.create_user(username='testuser3', password='testpassword')
+        self.user.is_staff = True
+        self.user.is_superuser = True
+        self.user.save()
         self.token = str(SlidingToken.for_user(self.user))
         self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + self.token)
         self.video_data = {
@@ -122,6 +122,8 @@ class VideoTests(APITestCase):
         }
         self.video = Video.objects.create(title='test video', description='test description', views=0)
 
+        
+        
     def test_create_video(self):
         response = self.client.post(reverse('videos'), self.video_data, format='multipart')
         self.assertEqual(response.status_code, 201)

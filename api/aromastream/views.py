@@ -19,6 +19,11 @@ from .serializators import (
     PasswordUpdateConfirmSerializer, TimeStampPaginateSchema, VideoPaginateSchema, TriggerSerializer
 )
 
+class IsAdminUserOrReadOnly(permissions.BasePermission):
+    
+    def has_permission(self, request, view):
+        return (request.user.is_authenticated and (request.user.is_superuser or request.user.is_staff)
+                or request.method in permissions.SAFE_METHODS)
 
 def generate_verification_code(length=settings.VERIFICATION_CODE_LENGTH):
     digits = "0123456789"
@@ -142,7 +147,7 @@ class TimeStampListView(APIView, PageNumberPagination):
 
 
 class TimeStampCreateView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAdminUser]
 
     @extend_schema(
         request=TimeStampSerializer, 
@@ -160,19 +165,17 @@ class TimeStampCreateView(APIView):
         ]
     )
     def post(self, request):
-        if not request.user.is_staff:
-            return Response({"detail": "Only staff members can create videos."}, status=status.HTTP_403_FORBIDDEN)
         
         serializer = TimeStampSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
-            return Response(status=status.HTTP_201_CREATED)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class VideoListView(APIView, PageNumberPagination):
     parser_classes = [FormParser, MultiPartParser]
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    permission_classes = [IsAdminUserOrReadOnly]
 
     @extend_schema(
         request=None, 
@@ -193,9 +196,6 @@ class VideoListView(APIView, PageNumberPagination):
     )
     
     def post(self, request):
-        if not request.user.is_staff:
-            return Response({"detail": "Only staff members can create videos."}, status=status.HTTP_403_FORBIDDEN)
-        
         serializer = VideoSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()

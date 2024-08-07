@@ -21,7 +21,10 @@ class Video(models.Model):
     file = models.FileField(upload_to=upload_file_path, validators=[FileExtensionValidator(allowed_extensions=['mp4'])])
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    views = models.IntegerField(default=0)
+    views = models.IntegerField(default=0, blank=True)
+    
+    def __str__(self):
+        return self.title
     
 class TimeStamp(models.Model):
     aroma_choices = [('A', 'A'), ('B', 'B'), ('C', 'C'), ('D', 'D')]
@@ -29,6 +32,9 @@ class TimeStamp(models.Model):
     aroma = models.CharField(max_length=1, choices=aroma_choices)
     moment = models.TimeField()
     created_at = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return f"id - {self.id}"
 
 class ChangeRequest(models.Model):
     field_choices = [('password', 'password')]
@@ -42,4 +48,6 @@ class ChangeRequest(models.Model):
     def cleanup_expired_user_change_requests(cls, user, field):
         cls.objects.filter(user=user, field=field, created_at__lt=timezone.now() - timedelta(hours=1)).delete()
 
+    def __str__(self):
+        return f"{self.user.username} - {self.field} - {self.created_at}"
 
